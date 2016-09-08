@@ -48,8 +48,12 @@ threshold = 0.23
 alpha = 1/maxEigval
 
 def armderiv(x, y, W, alpha, threshold):
+    hard_thresholding = False
     linout = y - alpha * (y.dot(W) - x).dot(W.T)
-    out = np.sign(linout) * np.maximum(0, np.absolute(linout) - threshold)
+    if hard_thresholding:
+        out = (np.absolute(linout)>threshold) * linout
+    else:
+        out = np.sign(linout) * np.maximum(0, np.absolute(linout) - threshold)
     return out
 
 def arm(x, count, W, alpha, threshold):
