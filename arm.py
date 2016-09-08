@@ -1,7 +1,5 @@
 import numpy as np
 
-from scipy.linalg import eigh as largest_eigh
-from scipy.sparse.linalg.eigen.arpack import eigsh as largest_eigsh
 from sklearn.preprocessing import normalize
 
 
@@ -20,10 +18,10 @@ X_test = X_test.astype('float32')
 X_train /= 255
 X_test /= 255
 
-print(X_train.shape[0], 'train samples')
-print(X_test.shape[0], 'test samples')
+#print(X_train.shape[0], 'train samples')
+#print(X_test.shape[0], 'test samples')
 
-dict_size = 300
+dict_size = 1000
 
 X = X_train[:999]
 
@@ -34,24 +32,21 @@ W = normalize(W, axis=1)
 
 
 zeroOut = np.zeros(shape=[input_size, dict_size])
-print X.shape
-print W.shape
-print zeroOut.shape
+#print X.shape
+#print W.shape
+#print zeroOut.shape
 
-print np.linalg.eigvals(W.dot(W.T))
+eigvals = np.linalg.eigvals(W.dot(W.T))
+maxEigval = np.ndarray.max(np.absolute(eigvals))
+print "Maximum eigenvalue: ", maxEigval
 
-# evals_large, evecs_large = largest_eigh(np.dot(W,WT), eigvals=(N-2,N-1))
-#print evals_large
-#print evecs_large
-
-iterations = 10
-threshold = 0.001
-alpha = 0.001
+iterations = 20
+threshold = 0.1
+alpha = 1/maxEigval
 
 def armderiv(x, y, W, alpha, threshold):
     linout = y - alpha * (y.dot(W) - x).dot(W.T)
     out = np.sign(linout) * np.maximum(0, np.absolute(linout) - threshold)
-    print np.min(y), np.max(y), np.mean(y)
     return out
 
 def arm(x, count, W, alpha, threshold):
@@ -59,15 +54,21 @@ def arm(x, count, W, alpha, threshold):
         outApprox = zeroOut 
     else:
         outApprox = arm(x, count-1, W, alpha, threshold)
+    
     return armderiv(x, outApprox, W, alpha, threshold)
 
 
 Y = arm(X,iterations,W,alpha,threshold)
 X_prime = Y.dot(W)
 
+nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y)
+print "Average nonzero elements in the code: ", np.average(nonzero)
 
-print np.histogram(X)
-print np.histogram(X_prime)
-print np.histogram(X - X_prime)
+reconsError = np.sum(np.square(Y.dot(W)-X))/input_size
+print "Reconstruction error: ", reconsError
 
-print np.linalg.norm(X), np.linalg.norm(X_prime), np.linalg.norm(X - X_prime)
+#print np.histogram(X)
+#print np.histogram(X_prime)
+#print np.histogram(X - X_prime)
+
+# print np.linalg.norm(X), np.linalg.norm(X_prime), np.linalg.norm(X - X_prime)
