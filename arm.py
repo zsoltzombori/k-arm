@@ -23,7 +23,7 @@ X_test /= 255
 
 dict_size = 400
 
-X = X_train[:999]
+X = X_test[:999]
 
 input_size = X.shape[0]
 W = np.random.normal(size=[dict_size, nb_features])
@@ -43,8 +43,8 @@ eigvals = np.linalg.eigvals(W.dot(W.T))
 maxEigval = np.max(np.absolute(eigvals))
 print "Maximum eigenvalue: ", maxEigval
 
-iterations = 100
-threshold = 1.0
+iterations = 20
+threshold = 0.23
 alpha = 1/maxEigval
 
 def armderiv(x, y, W, alpha, threshold):
