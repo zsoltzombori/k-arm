@@ -1,7 +1,7 @@
 import numpy as np
 
 from sklearn.preprocessing import normalize
-
+import scipy.misc
 
 from keras.datasets import mnist
 # The data, shuffled and split between train and test sets
@@ -21,7 +21,7 @@ X_test /= 255
 #print(X_train.shape[0], 'train samples')
 #print(X_test.shape[0], 'test samples')
 
-dict_size = 1000
+dict_size = 400
 
 X = X_train[:999]
 
@@ -30,6 +30,9 @@ W = np.random.normal(size=[dict_size, nb_features])
 
 W = normalize(W, axis=1)
 
+W = np.load(file("/home/daniel/experiments/k-arm/k-arm/dict.npz"))['arr_0']
+assert W.shape[0]==dict_size
+
 
 zeroOut = np.zeros(shape=[input_size, dict_size])
 #print X.shape
@@ -37,11 +40,11 @@ zeroOut = np.zeros(shape=[input_size, dict_size])
 #print zeroOut.shape
 
 eigvals = np.linalg.eigvals(W.dot(W.T))
-maxEigval = np.ndarray.max(np.absolute(eigvals))
+maxEigval = np.max(np.absolute(eigvals))
 print "Maximum eigenvalue: ", maxEigval
 
-iterations = 20
-threshold = 0.1
+iterations = 100
+threshold = 1.0
 alpha = 1/maxEigval
 
 def armderiv(x, y, W, alpha, threshold):
@@ -62,7 +65,7 @@ Y = arm(X,iterations,W,alpha,threshold)
 X_prime = Y.dot(W)
 
 nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y)
-print "Average nonzero elements in the code: ", np.average(nonzero)
+print "Average density of nonzero elements in the code: ", np.average(nonzero) / dict_size
 
 reconsError = np.sum(np.square(Y.dot(W)-X))/input_size
 print "Reconstruction error: ", reconsError
@@ -72,3 +75,18 @@ print "Reconstruction error: ", reconsError
 #print np.histogram(X - X_prime)
 
 # print np.linalg.norm(X), np.linalg.norm(X_prime), np.linalg.norm(X - X_prime)
+
+
+def vis(X, filename, n=20):
+    w = 28
+    assert len(X) >= n*n
+    X = X[:n*n]
+    X = X.reshape((n, n, w, w))
+    img = np.zeros((n*w, n*w))
+    for i in range(n):
+        for j in range(n):
+            img[i*w:(i+1)*w, j*w:(j+1)*w] = X[i, j, :, :]
+    img = img.clip(0, 255).astype(np.uint8)
+    scipy.misc.imsave(filename, img)
+
+vis(Y.dot(W) * 255, "k-arm.png")
