@@ -1,96 +1,64 @@
 import numpy as np
-
 from sklearn.preprocessing import normalize
 import scipy.misc
+from keras import backend as K
+from keras.engine.topology import Layer
 
-from keras.datasets import mnist
-# The data, shuffled and split between train and test sets
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
+class ArmLayer(Layer):
+    def __init__(self, weights = None, iteration = 10, threshold = 0.05, dict_size = 400, batch_size=100, **kwargs):
+        self.initial_weights = weights
+        self.iteration = iteration
+        self.threshold = threshold
+        self.dict_size = dict_size
+        self.batch_size = batch_size
+        super(ArmLayer, self).__init__(**kwargs)
+        
+    def build(self, input_shape):
+        nb_features = np.prod(input_shape[1:])
 
-nb_features = 28*28
-# flatten the 28x28 images to arrays of length 28*28:
-X_train = X_train.reshape(60000, nb_features)
-X_test = X_test.reshape(10000, nb_features)
+        if self.initial_weights is not None:
+            initial_weight_value = self.initial_weights
+            print "Using provided weights"
+        else:
+            initial_weight_value = np.random.normal(size=[self.dict_size, nb_features])
 
-# convert brightness values from bytes to floats between 0 and 1:
-X_train = X_train.astype('float32')
-X_test = X_test.astype('float32')
-X_train /= 255
-X_test /= 255
+        intial_weight_value = normalize(initial_weight_value, axis=1)
 
-#print(X_train.shape[0], 'train samples')
-#print(X_test.shape[0], 'test samples')
+        # set alpha
+        eigvals = np.linalg.eigvals(initial_weight_value.dot(initial_weight_value.T))
+        maxEigval = np.max(np.absolute(eigvals))
+        self.alpha = 1/maxEigval
 
-dict_size = 400
-
-X = X_test[:999]
-
-input_size = X.shape[0]
-W = np.random.normal(size=[dict_size, nb_features])
-
-W = normalize(W, axis=1)
-
-W = np.load(file("/home/daniel/experiments/k-arm/k-arm/dict.npz"))['arr_0']
-assert W.shape[0]==dict_size
+        self.W = K.variable(initial_weight_value, name='{}_W'.format(self.name))
+        self.trainable_weights = [self.W]
 
 
-zeroOut = np.zeros(shape=[input_size, dict_size])
-#print X.shape
-#print W.shape
-#print zeroOut.shape
+    def armderiv(self,x, y):
+        hard_thresholding = False
+        linout = y - self.alpha * K.dot(K.dot(y,self.W) - x,self.W.T)
+        if hard_thresholding:
+            out = K.greater(K.abs(linout),self.threshold) * linout
+        else:
+            out = K.sign(linout) * K.max(K.abs(linout) - self.threshold,0)
+        return out
 
-eigvals = np.linalg.eigvals(W.dot(W.T))
-maxEigval = np.max(np.absolute(eigvals))
-print "Maximum eigenvalue: ", maxEigval
+    def arm(self, x, iteration):
+        if iteration==0:
+            outApprox = K.zeros(shape=[self.batch_size, self.dict_size])
+        else:
+            outApprox = self.arm(x, iteration-1)
+        return self.armderiv(x, outApprox)
 
-iterations = 20
-threshold = 0.23
-alpha = 1/maxEigval
-
-def armderiv(x, y, W, alpha, threshold):
-    hard_thresholding = False
-    linout = y - alpha * (y.dot(W) - x).dot(W.T)
-    if hard_thresholding:
-        out = (np.absolute(linout)>threshold) * linout
-    else:
-        out = np.sign(linout) * np.maximum(0, np.absolute(linout) - threshold)
-    return out
-
-def arm(x, count, W, alpha, threshold):
-    if count==0:
-        outApprox = zeroOut 
-    else:
-        outApprox = arm(x, count-1, W, alpha, threshold)
+    def call(self, x, mask=None):
+        # flatten the images to arrays
+        x_flattened = K.reshape(x,[K.shape(x)[0],K.prod(K.shape(x)[1:])])
+        
+        y = self.arm(x_flattened, self.iteration)
+        #nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=y)
+        #averageDensity = np.average(nonzero) / self.dict_size
+        reconsError = K.sum(K.square(y.dot(self.W)-x_flattened))/x_flattened.shape[0]
+        
+        return y, reconsError
     
-    return armderiv(x, outApprox, W, alpha, threshold)
-
-
-Y = arm(X,iterations,W,alpha,threshold)
-X_prime = Y.dot(W)
-
-nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y)
-print "Average density of nonzero elements in the code: ", np.average(nonzero) / dict_size
-
-reconsError = np.sum(np.square(Y.dot(W)-X))/input_size
-print "Reconstruction error: ", reconsError
-
-#print np.histogram(X)
-#print np.histogram(X_prime)
-#print np.histogram(X - X_prime)
-
-# print np.linalg.norm(X), np.linalg.norm(X_prime), np.linalg.norm(X - X_prime)
-
-
-def vis(X, filename, n=20):
-    w = 28
-    assert len(X) >= n*n
-    X = X[:n*n]
-    X = X.reshape((n, n, w, w))
-    img = np.zeros((n*w, n*w))
-    for i in range(n):
-        for j in range(n):
-            img[i*w:(i+1)*w, j*w:(j+1)*w] = X[i, j, :, :]
-    img = img.clip(0, 255).astype(np.uint8)
-    scipy.misc.imsave(filename, img)
-
-vis(Y.dot(W) * 255, "k-arm.png")
+    def get_output_shape_for(self,input_shape):
+        return(self.batch_size, self.dict_size)
