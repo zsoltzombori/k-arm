@@ -5,7 +5,7 @@ from keras import backend as K
 from keras.engine.topology import Layer
 
 class ArmLayer(Layer):
-    def __init__(self, weights = None, iteration = 10, threshold = 0.05, dict_size = 400, batch_size=100, **kwargs):
+    def __init__(self, batch_size, weights = None, iteration = 10, threshold = 0.05, dict_size = 400, **kwargs):
         self.initial_weights = weights
         self.iteration = iteration
         self.threshold = threshold
@@ -23,6 +23,7 @@ class ArmLayer(Layer):
             initial_weight_value = np.random.normal(size=[self.dict_size, nb_features])
 
         intial_weight_value = normalize(initial_weight_value, axis=1)
+        initial_weight_value = initial_weight_value.astype('float32')
 
         # set alpha
         eigvals = np.linalg.eigvals(initial_weight_value.dot(initial_weight_value.T))
@@ -45,6 +46,7 @@ class ArmLayer(Layer):
     def arm(self, x, iteration):
         if iteration==0:
             outApprox = K.zeros(shape=[self.batch_size, self.dict_size])
+            outApprox = outApprox.astype('float32')
         else:
             outApprox = self.arm(x, iteration-1)
         return self.armderiv(x, outApprox)
@@ -53,12 +55,8 @@ class ArmLayer(Layer):
         # flatten the images to arrays
         x_flattened = K.reshape(x,[K.shape(x)[0],K.prod(K.shape(x)[1:])])
         
-        y = self.arm(x_flattened, self.iteration)
-        #nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=y)
-        #averageDensity = np.average(nonzero) / self.dict_size
-        reconsError = K.sum(K.square(y.dot(self.W)-x_flattened))/x_flattened.shape[0]
-        
-        return y, reconsError
+        y = self.arm(x_flattened, self.iteration)        
+        return y
     
     def get_output_shape_for(self,input_shape):
         return(self.batch_size, self.dict_size)
