@@ -4,7 +4,7 @@ from keras.models import Model
 from keras.optimizers import SGD
 from keras.regularizers import l2
 
-default_iteration = 20
+default_iteration = 2
 default_threshold = 0.05
 default_dict_size = 1000
 weight_decay = 1e-4

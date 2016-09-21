@@ -59,4 +59,4 @@ class ArmLayer(Layer):
         return y
     
     def get_output_shape_for(self,input_shape):
-        return(self.batch_size, self.dict_size)
+        return(input_shape[0], self.dict_size)
