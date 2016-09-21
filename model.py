@@ -10,7 +10,7 @@ default_dict_size = 400
 def build_model(input_shape, layer_count=1, iterations=None, thresholds=None, dict_sizes=None):
     assert layer_count > 0
     batch_size = input_shape[0]
-    input = Input(shape=input_shape)
+    input = Input(shape=input_shape[1:])
     if iterations is not None:
         assert len(iterations) == layer_count
     else:
