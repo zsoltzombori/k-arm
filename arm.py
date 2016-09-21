@@ -28,7 +28,7 @@ class ArmLayer(Layer):
         # set alpha
         eigvals = np.linalg.eigvals(initial_weight_value.dot(initial_weight_value.T))
         maxEigval = np.max(np.absolute(eigvals))
-        self.alpha = 1/maxEigval
+        self.alpha = np.float32(1/maxEigval)
 
         self.W = K.variable(initial_weight_value, name='{}_W'.format(self.name))
         self.trainable_weights = [self.W]
