@@ -1,13 +1,15 @@
 from arm import ArmLayer
-from keras.layers import Input
+from keras.layers import Input, Dense
 from keras.models import Model
 from keras.optimizers import SGD
+from keras.regularizers import l2
 
 default_iteration = 20
 default_threshold = 0.05
-default_dict_size = 400
+default_dict_size = 1000
+weight_decay = 1e-4
 
-def build_model(input_shape, layer_count=1, iterations=None, thresholds=None, dict_sizes=None):
+def build_model(input_shape, nb_classes, layer_count=1, iterations=None, thresholds=None, dict_sizes=None):
     assert layer_count > 0
     batch_size = input_shape[0]
     input = Input(shape=input_shape[1:])
@@ -33,6 +35,7 @@ def build_model(input_shape, layer_count=1, iterations=None, thresholds=None, di
             iteration = iterations[i],
             threshold = thresholds[i],
             dict_size=dict_sizes[i])(output)
+    output = Dense(nb_classes, activation="softmax", W_regularizer=l2(weight_decay))(output)
     model = Model(input=input, output=output)
     sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss="categorical_crossentropy", metrics=["accuracy"])
