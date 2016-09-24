@@ -5,7 +5,7 @@ from keras.datasets import mnist
 import scipy.misc
 
 f = 28*28
-c = 400
+c = 1000
 n = 400
 density = 0.05
 
@@ -51,7 +51,7 @@ if do_random_dictionary_test:
     vis(X_prime, "recons.png")
 
 
-cached = True
+cached = False
 
 if not cached:
     dl = DictionaryLearning(n_components=c, max_iter=10, transform_n_nonzero_coefs=int(c * density), verbose=True)
@@ -60,13 +60,13 @@ if not cached:
 
     W_learned = dl.components_
 
-    with file("dict.npz", "wb") as npzfile:
+    with file("dict1000.npz", "wb") as npzfile:
         np.savez(npzfile, W_learned)
 
     Y_learned = dl.transform(X_test)
 
 else:
-    W_learned = np.load(file("dict.npz"))['arr_0']
+    W_learned = np.load(file("dict1000.npz"))['arr_0']
     sc = SparseCoder(dictionary=W_learned, transform_n_nonzero_coefs=int(c * density))
     Y_learned = sc.transform(X_test)
 
@@ -78,10 +78,10 @@ print "Average density of nonzero elements in the code: ", np.average(nonzero) /
 reconsError = np.sum(np.square(X_prime_learned-X_test)) / n / 255 / 255
 print "Reconstruction error: ", reconsError
 
-vis(X_prime_learned, "dl.png")
+vis(X_prime_learned, "dl1000.png")
 
 W_scaled = W_learned - np.min(W_learned)
 W_scaled /= np.max(W_scaled)
 W_scaled *= 255
 
-vis(W_scaled, "dict.png", n=10)
+vis(W_scaled, "dict1000.png", n=10)
