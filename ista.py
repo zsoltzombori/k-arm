@@ -27,7 +27,7 @@ X_train /= 255
 X_test /= 255
 vis(X_test * 255, "orig.png")
 
-W = np.load(file("dict1000.npz"))['arr_0']
+W = None # np.load(file("dict1000.npz"))['arr_0']
 model = build_single_layer(input_shape=X_test.shape, iteration=iteration, threshold=threshold, dict_size=dict_size, weights=W)
 Y_learned = model.predict_on_batch(X_test)
 W_learned = model.layers[1].get_weights()[0]

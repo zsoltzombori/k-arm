@@ -27,7 +27,7 @@ class ArmLayer(Layer):
         else:
             self.np_weights =  np.random.normal(size=[self.dict_size, nb_features])
             self.np_weights = np.float32(normalize(self.np_weights, axis=1))
-            self.W = K.variable(initial_weight_value, name='{}_W'.format(self.name))
+            self.W = K.variable(self.np_weights, name='{}_W'.format(self.name))
 
         # set alpha
         eigvals = np.linalg.eigvals(self.np_weights.dot(self.np_weights.T))

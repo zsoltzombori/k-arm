@@ -70,11 +70,13 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
         threshold = threshold,
         weights = weights,
         shared_weights = shared_weights)
-    lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")
     Y = armLayer(input)
+    lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")    
     output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
-    sgd = SGD(lr=0.0001, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.000001, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss="mse")
+    sparsity_loss = threshold * K.sum(K.abs(Y)) / (28*28*128)
+    model.total_loss += sparsity_loss
     return model

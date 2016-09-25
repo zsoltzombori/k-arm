@@ -23,6 +23,9 @@ def load_mnist():
     Y_train = np_utils.to_categorical(Y_train, nb_classes)
     Y_test = np_utils.to_categorical(Y_test, nb_classes)
 
+    X_train /= 255
+    X_test /= 255
+    
     datagen = ImageDataGenerator(
         featurewise_center=False,
         samplewise_center=False,
