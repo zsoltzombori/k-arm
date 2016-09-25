@@ -57,17 +57,18 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
 
 def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights, shared_weights):
     input = Input(shape=input_shape[1:])
+    nb_features = np.prod(input_shape[1:])
     armLayer = ArmLayer(
         dict_size=dict_size,
         iteration = iteration,
         threshold = threshold,
         weights = weights,
         shared_weights = shared_weights)
-    lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[784], name="decode_layer")
+    lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")
     output = armLayer(input)
     output = lambdaLayer((output))
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
-    sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss="mean_squared_error", metrics=["accuracy"])
+    sgd = SGD(lr=0.0001, momentum=0.9, nesterov=True)
+    model.compile(optimizer=sgd, loss="mse", metrics=["accuracy"])
     return model

@@ -6,7 +6,7 @@ from keras.engine.topology import Layer
 
 class ArmLayer(Layer):
     def __init__(self, dict_size, weights = None, iteration = 10, threshold = 0.5, shared_weights=None, **kwargs):
-        self.init_weights = weights
+        self.np_weights = weights
         self.shared_weights = shared_weights
         self.iteration = iteration
         self.threshold = threshold
@@ -16,24 +16,21 @@ class ArmLayer(Layer):
     def build(self, input_shape):
         nb_features = np.prod(input_shape[1:])
 
-        if self.init_weights is not None:
-            initial_weight_value = self.init_weights
-            intial_weight_value = normalize(initial_weight_value, axis=1)
-            initial_weight_value = initial_weight_value.astype('float32')
-
-            if self.shared_weights is not None:
-                self.W = self.shared_weights
-            else:
-                self.W = K.variable(initial_weight_value, name='{}_W'.format(self.name))
-                print "Using provided weights"
+        if self.shared_weights is not None:
+            print "Using provided shared weights"
+            self.W = self.shared_weights
+            self.np_weights = self.shared_weights.get_value()
+        elif self.np_weights is not None:
+            print "Using provided np weights"
+            self.np_weights = np.float32(normalize(self.np_weights, axis=1))
+            self.W = K.variable(self.np_weights, name='{}_W'.format(self.name))
         else:
-            initial_weight_value = np.random.normal(size=[self.dict_size, nb_features])
-            intial_weight_value = normalize(initial_weight_value, axis=1)
-            initial_weight_value = initial_weight_value.astype('float32')
+            self.np_weights =  np.random.normal(size=[self.dict_size, nb_features])
+            self.np_weights = np.float32(normalize(self.np_weights, axis=1))
             self.W = K.variable(initial_weight_value, name='{}_W'.format(self.name))
 
         # set alpha
-        eigvals = np.linalg.eigvals(initial_weight_value.dot(initial_weight_value.T))
+        eigvals = np.linalg.eigvals(self.np_weights.dot(self.np_weights.T))
         maxEigval = 1.5 * np.max(np.absolute(eigvals))
         self.alpha = np.float32(1/maxEigval)
 

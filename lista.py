@@ -13,9 +13,9 @@ args = parser.parse_args()
 dict_size = args.dict
 iteration = args.iteration
 threshold = args.threshold
-n = 1000
+n = 10000
 batch_size=128
-nb_epoch = 5
+nb_epoch = 30
 import sys
 sys.setrecursionlimit(2**20)
 
@@ -43,7 +43,6 @@ model.fit_generator(datagen.flow(X_train, X_train, batch_size=batch_size, shuffl
                         nb_val_samples=nb_val_samples
                         )
 X_prime_learned = model.predict_on_batch(X_test)
-
 
 #nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y_learned)
 #print "Average density of nonzero elements in the code: ", np.average(nonzero) / dict_size
