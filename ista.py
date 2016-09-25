@@ -40,4 +40,4 @@ print "Average density of nonzero elements in the code: ", np.average(nonzero) /
 reconsError = np.sum(np.square(X_prime_learned-X_test)) / n
 print "Reconstruction error: ", reconsError
 
-vis(X_prime_learned * 255, "karm.png")
+vis(X_prime_learned * 255, "ista.png")

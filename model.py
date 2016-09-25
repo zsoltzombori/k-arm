@@ -6,11 +6,14 @@ from keras.optimizers import SGD
 from keras.regularizers import l2
 from sklearn.preprocessing import normalize
 from keras import backend as K
+from keras.callbacks import Callback
 
 default_iteration = 2
 default_threshold = 0.5
 default_dict_size = 1000
 weight_decay = 1e-4
+
+
 
 def build_model(input_shape, nb_classes, layer_count=1, iterations=None, thresholds=None, dict_sizes=None):
     assert layer_count > 0
@@ -55,6 +58,9 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
     model.compile(optimizer=sgd, loss="categorical_crossentropy", metrics=["accuracy"])
     return model
 
+def mse_loss(y_true,y_pred):
+    return K.sum(K.square(y_true - y_pred[0]))
+
 def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights, shared_weights):
     input = Input(shape=input_shape[1:])
     nb_features = np.prod(input_shape[1:])
@@ -65,10 +71,10 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
         weights = weights,
         shared_weights = shared_weights)
     lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")
-    output = armLayer(input)
-    output = lambdaLayer((output))
+    Y = armLayer(input)
+    output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
     sgd = SGD(lr=0.0001, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss="mse", metrics=["accuracy"])
+    model.compile(optimizer=sgd, loss="mse")
     return model
