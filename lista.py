@@ -22,9 +22,7 @@ import sys
 sys.setrecursionlimit(2**20)
 
 (X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_mnist()
-X_train = X_train[]
 X_test = X_test[:n]
-Y_train = Y_train[]
 Y_test = Y_test[:n]
 vis(X_test * 255, "orig.png")
 
