@@ -45,14 +45,13 @@ def build_model(input_shape, nb_classes, layer_count=1, iterations=None, thresho
     model.compile(optimizer=sgd, loss="categorical_crossentropy", metrics=["accuracy"])
     return model
 
-def build_single_layer(input_shape, iteration, threshold, dict_size, weights=None, shared_weights=None):
+def build_single_layer(input_shape, iteration, threshold, dict_size, weights=None):
     input = Input(shape=input_shape[1:])
     output = ArmLayer(
         dict_size=dict_size,
         iteration = iteration,
         threshold = threshold,
-        weights = weights,
-        shared_weights = shared_weights)(input)
+        weights = weights)(input)
     model = Model(input=input, output=output)
     sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss="categorical_crossentropy", metrics=["accuracy"])
@@ -61,15 +60,14 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
 def mse_loss(y_true,y_pred):
     return K.sum(K.square(y_true - y_pred[0]))
 
-def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights, shared_weights):
+def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights):
     input = Input(shape=input_shape[1:])
     nb_features = np.prod(input_shape[1:])
     armLayer = ArmLayer(
         dict_size=dict_size,
         iteration = iteration,
         threshold = threshold,
-        weights = weights,
-        shared_weights = shared_weights)
+        weights = weights)
     Y = armLayer(input)
     lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")    
     output = lambdaLayer((Y))
