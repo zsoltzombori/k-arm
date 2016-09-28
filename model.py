@@ -73,8 +73,8 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
     output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
-    sgd = SGD(lr=0.000001, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.0001, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss="mse")
-    sparsity_loss = threshold * K.sum(K.abs(Y)) / (28*28*128)
+    sparsity_loss = threshold * K.sum(K.abs(Y)) / nb_features
     model.total_loss += sparsity_loss
     return model

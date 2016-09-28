@@ -30,6 +30,7 @@ vis(X_test * 255, "orig.png")
 nb_features = np.prod(X_test.shape[1:])
 if randomWeights == 1:
     weights = None
+    print "Using random weights"
 else:
     weights = np.load(file("dict1000.npz"))['arr_0']
 
@@ -47,12 +48,6 @@ model.fit_generator(datagen.flow(X_test, X_test, batch_size=batch_size, shuffle=
 
 y_fun = K.function([model.layers[0].input], [model.layers[1].output])
 Y_learned = y_fun([X_test])[0]
-#W_learned = model.layers[1].get_weights()[0]
-#X_prime_learned = np.dot(Y_learned, W_learned)
-#X_prime_learned = X_prime_learned.reshape(n,1,28,28)
-
-#x_prime_fun = K.function([model.layers[0].input], [model.output])
-#X_prime_learned = x_prime_fun([X_test])[0]
 X_prime_learned = model.predict_on_batch(X_test)
 
 nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y_learned)
