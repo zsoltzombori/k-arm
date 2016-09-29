@@ -60,7 +60,7 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
 def mse_loss(y_true,y_pred):
     return K.sum(K.square(y_true - y_pred[0]))
 
-def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights):
+def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights, lr):
     input = Input(shape=input_shape[1:])
     nb_features = np.prod(input_shape[1:])
     armLayer = ArmLayer(
@@ -73,7 +73,7 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
     output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
-    sgd = SGD(lr=0.0001, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=lr, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd, loss="mse")
     sparsity_loss = threshold * K.sum(K.abs(Y)) / nb_features
     model.total_loss += sparsity_loss
