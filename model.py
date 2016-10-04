@@ -2,7 +2,7 @@ import numpy as np
 from arm import ArmLayer
 from keras.layers import Input, Dense, Lambda, Reshape
 from keras.models import Model
-from keras.optimizers import SGD
+from keras.optimizers import SGD, RMSprop
 from keras.regularizers import l2
 from sklearn.preprocessing import normalize
 from keras import backend as K
@@ -53,8 +53,8 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
         threshold = threshold,
         weights = weights)(input)
     model = Model(input=input, output=output)
-    sgd = SGD(lr=0.1, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss="categorical_crossentropy", metrics=["accuracy"])
+    rmsprop = RMSprop()
+    model.compile(optimizer=rmsprop, loss="mse")
     return model
 
 def mse_loss(y_true,y_pred):
@@ -73,8 +73,6 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
     output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
-    sgd = SGD(lr=lr, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss="mse")
-    sparsity_loss = threshold * K.sum(K.abs(Y)) / nb_features
-    model.total_loss += sparsity_loss
+    rmsprop = RMSprop(lr=lr)
+    model.compile(optimizer=rmsprop, loss="mse")
     return model

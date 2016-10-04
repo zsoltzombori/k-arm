@@ -5,9 +5,10 @@ from keras.datasets import mnist
 import scipy.misc
 
 f = 28*28
-c = 1000
-n = 400
-density = 0.05
+c = 400
+trainSize = 1000
+testSize = 1000
+density = 0.1
 
 
 def vis(X, filename, n=20):
@@ -24,10 +25,8 @@ def vis(X, filename, n=20):
 
 
 (X_train, y_train), (X_test, y_test) = mnist.load_data()
-
-X_train = X_train.reshape(60000, f)
-X = X_train[:n]
-X_test = X_test[:n].reshape(n, f)
+X_train = X_train[:trainSize].reshape(trainSize, f)
+X_test = X_test[:testSize].reshape(testSize, f)
 
 vis(X_test, "orig.png")
 
@@ -37,7 +36,7 @@ if do_random_dictionary_test:
     W = np.random.normal(size=(c, f))
     W = normalize(W, axis=1)
 
-    print X.shape, W.shape
+    print X_train.shape, W.shape
 
     sc = SparseCoder(dictionary=W, transform_n_nonzero_coefs=int(c * density))
 
@@ -55,18 +54,18 @@ cached = False
 
 if not cached:
     dl = DictionaryLearning(n_components=c, max_iter=10, transform_n_nonzero_coefs=int(c * density), verbose=True)
-    dl.fit(X)
+    dl.fit(X_train)
     print
 
     W_learned = dl.components_
 
-    with file("dict1000.npz", "wb") as npzfile:
+    with file("dict.npz", "wb") as npzfile:
         np.savez(npzfile, W_learned)
 
     Y_learned = dl.transform(X_test)
 
 else:
-    W_learned = np.load(file("dict1000.npz"))['arr_0']
+    W_learned = np.load(file("dict.npz"))['arr_0']
     sc = SparseCoder(dictionary=W_learned, transform_n_nonzero_coefs=int(c * density))
     Y_learned = sc.transform(X_test)
 
@@ -75,13 +74,13 @@ X_prime_learned = np.dot(Y_learned, W_learned)
 nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y_learned)
 print "Average density of nonzero elements in the code: ", np.average(nonzero) / c
 
-reconsError = np.sum(np.square(X_prime_learned-X_test)) / n / 255 / 255
+reconsError = np.sum(np.square(X_prime_learned-X_test)) / testSize / 255 / 255 / f
 print "Reconstruction error: ", reconsError
 
-vis(X_prime_learned, "dl1000.png")
+vis(X_prime_learned, "dl.png")
 
 W_scaled = W_learned - np.min(W_learned)
 W_scaled /= np.max(W_scaled)
 W_scaled *= 255
 
-vis(W_scaled, "dict1000.png", n=10)
+vis(W_scaled, "dict.png", n=20)

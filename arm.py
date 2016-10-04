@@ -3,6 +3,7 @@ from sklearn.preprocessing import normalize
 import scipy.misc
 from keras import backend as K
 from keras.engine.topology import Layer
+from keras.regularizers import activity_l1
 
 class ArmLayer(Layer):
     def __init__(self, dict_size, weights = None, iteration = 10, threshold = 0.5, **kwargs):
@@ -18,9 +19,9 @@ class ArmLayer(Layer):
         if self.np_weights is not None:
             print "Using provided np weights"
         else:
-            self.np_weights =  np.random.normal(size=[self.dict_size, nb_features])
-            
-        self.np_weights = np.float32(normalize(self.np_weights, axis=1))
+            self.np_weights = np.random.normal(size=[self.dict_size, nb_features])
+            self.np_weights = np.float32(normalize(self.np_weights, axis=1))           
+        
         self.W = K.variable(self.np_weights, name='{}_W'.format(self.name))
 
         Wzero = np.float32(np.zeros(shape=[nb_features, self.dict_size]))
@@ -33,11 +34,14 @@ class ArmLayer(Layer):
         maxEigval = np.max(np.absolute(eigvals))
         self.alpha = np.float32(1/maxEigval)
 
+        self.activity_regularizer = activity_l1(self.threshold/nb_features)
+        self.activity_regularizer.set_layer(self)
+        self.regularizers.append(self.activity_regularizer)
 
     def armderiv(self,x, y, domineigval):
         hard_thresholding = False
-        #linout = y - (1/domineigval) * K.dot(K.dot(y,self.W) - x,self.W.T)
-        linout = y - self.alpha * K.dot(K.dot(y,self.W) - x,self.W.T)
+        linout = y - (1/domineigval) * K.dot(K.dot(y,self.W) - x,self.W.T)
+        #linout = y - self.alpha * K.dot(K.dot(y,self.W) - x,self.W.T)
         if hard_thresholding:
             out = K.greater(K.abs(linout),self.threshold) * linout
         else:
