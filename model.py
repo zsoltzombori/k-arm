@@ -2,7 +2,7 @@ import numpy as np
 from arm import ArmLayer
 from keras.layers import Input, Dense, Lambda, Reshape
 from keras.models import Model
-from keras.optimizers import SGD, RMSprop
+from keras.optimizers import *
 from keras.regularizers import l2
 from sklearn.preprocessing import normalize
 from keras import backend as K
@@ -54,11 +54,9 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
         weights = weights)(input)
     model = Model(input=input, output=output)
     rmsprop = RMSprop()
-    model.compile(optimizer=rmsprop, loss="mse")
+    adagrad = Adagrad()
+    model.compile(optimizer=adagrad, loss="mse")
     return model
-
-def mse_loss(y_true,y_pred):
-    return K.sum(K.square(y_true - y_pred[0]))
 
 def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights, lr):
     input = Input(shape=input_shape[1:])
@@ -72,6 +70,42 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
     lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")    
     output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)
+    model = Model(input=input, output=output)
+    optimizer = RMSprop(lr=lr)
+    optimizer = Nadam()
+    
+    model.compile(optimizer=optimizer, loss="mse")
+    return model
+
+def build_encode_decode_layers(input_shape, iteration, threshold, dict_size_list, lr, layers, weights_list=None):
+    assert len(dict_size_list) >= layers
+    if weights_list is not None:
+        assert len(weights_list) == layers
+    
+    input = Input(shape=input_shape[1:])
+    nb_features = np.prod(input_shape[1:])
+    output = input
+    
+    # build layers number of arm layers
+    Ws = []
+    for i in range(layers):
+        dict_size = dict_size_list[i]
+        if weights_list is not None:
+            weights = weights_list[i]
+        else:
+            weights = None
+        
+        currentLayer = ArmLayer(dict_size=dict_size,iteration=iteration, threshold=threshold, weights=weights, name="armLayer{}".format(i))
+        Ws.append(currentLayer.W)
+        output = currentLayer(output)
+
+    # build layers number of decoding layers
+    output_shape_list = [nb_features] + dict_size_list
+    for i in reversed(range(layers)):
+        output = Lambda(lambda y: K.dot(y,Ws[i]), output_shape=output_shape_list[i], name="decodeLayer{}".format(i))(output)
+
+    # restore the original shape of the input
+    output = Reshape(input_shape[1:], name="reshapeLayer")(output)
     model = Model(input=input, output=output)
     rmsprop = RMSprop(lr=lr)
     model.compile(optimizer=rmsprop, loss="mse")

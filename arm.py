@@ -17,7 +17,7 @@ class ArmLayer(Layer):
         nb_features = np.prod(input_shape[1:])
 
         if self.np_weights is not None:
-            print "Using provided np weights"
+            print "Using provided weights"
         else:
             self.np_weights = np.random.normal(size=[self.dict_size, nb_features])
             self.np_weights = np.float32(normalize(self.np_weights, axis=1))           

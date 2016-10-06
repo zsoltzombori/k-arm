@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.decomposition import SparseCoder, DictionaryLearning
+from sklearn.decomposition import SparseCoder, DictionaryLearning, MiniBatchDictionaryLearning
 from sklearn.preprocessing import normalize
 from keras.datasets import mnist
 import scipy.misc
@@ -9,7 +9,8 @@ c = 400
 trainSize = 1000
 testSize = 1000
 density = 0.1
-
+threshold = 0.01
+batch_size=128
 
 def vis(X, filename, n=20):
     w = 28
@@ -53,7 +54,7 @@ if do_random_dictionary_test:
 cached = False
 
 if not cached:
-    dl = DictionaryLearning(n_components=c, max_iter=10, transform_n_nonzero_coefs=int(c * density), verbose=True)
+    dl = MiniBatchDictionaryLearning(n_components=c, alpha=threshold, batch_size=batch_size, n_iter=10, transform_n_nonzero_coefs=int(c * density), verbose=True)
     dl.fit(X_train)
     print
 
@@ -72,10 +73,16 @@ else:
 X_prime_learned = np.dot(Y_learned, W_learned)
 
 nonzero = np.apply_along_axis(np.count_nonzero, axis=1, arr=Y_learned)
+nonzeroHist = np.histogram(nonzero, bins=20)
+print nonzeroHist[0]
+print nonzeroHist[1]
 print "Average density of nonzero elements in the code: ", np.average(nonzero) / c
 
 reconsError = np.sum(np.square(X_prime_learned-X_test)) / testSize / 255 / 255 / f
 print "Reconstruction error: ", reconsError
+sparsity_loss = threshold * np.sum(np.abs(Y_learned)) / testSize / nb_features
+total_loss = reconsError + sparsity_loss
+print "Total loss: ", total_loss
 
 vis(X_prime_learned, "dl.png")
 
