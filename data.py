@@ -12,10 +12,6 @@ def load_mnist():
     X_train = np.expand_dims(X_train, axis=1)
     X_test = np.expand_dims(X_test, axis=1)
 
-    print('X_train shape:', X_train.shape)
-    print(X_train.shape[0], 'train samples')
-    print(X_test.shape[0], 'test samples')
-
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
 

@@ -43,4 +43,4 @@ def diff_vis(dataOriginal, generatedOriginal, height, width, n_x, n_y, name, dis
     blue = np.minimum(image_data, image_generated) # image_data/2 + image_generated/2
     rgb = np.dstack((image_data, image_generated, blue))
     img = Image.fromarray(rgb, 'RGB')
-    img.save(name+".png")
+    img.save(name)

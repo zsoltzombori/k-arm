@@ -34,7 +34,7 @@ class ArmLayer(Layer):
         maxEigval = np.max(np.absolute(eigvals))
         self.alpha = np.float32(1/maxEigval)
 
-        self.activity_regularizer = activity_l1(self.threshold/nb_features)
+        self.activity_regularizer = activity_l1(2 * self.threshold/nb_features)
         self.activity_regularizer.set_layer(self)
         self.regularizers.append(self.activity_regularizer)
 
@@ -67,7 +67,7 @@ class ArmLayer(Layer):
         # flatten the images to arrays
         x_flattened = K.reshape(x,[K.shape(x)[0],K.prod(K.shape(x)[1:])])
         
-        y = self.arm(x_flattened, 2*domineigval, self.iteration)        
+        y = self.arm(x_flattened, domineigval, self.iteration)        
         return y
     
     def get_output_shape_for(self,input_shape):
