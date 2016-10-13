@@ -1,26 +1,36 @@
 import numpy as np
 from arm import ArmLayer
-from keras.layers import Input, Dense, Lambda, Reshape
+from keras.layers import Input, Dense, Lambda, Reshape, Dropout, Flatten
 from keras.models import Model
 from keras.optimizers import *
 from keras.regularizers import l2
 from sklearn.preprocessing import normalize
 from keras import backend as K
 from keras.callbacks import Callback
+from keras.layers.normalization import BatchNormalization
+from keras.layers.convolutional import Convolution2D, MaxPooling2D
 
 weight_decay = 1e-4
 
 
 
-def build_classifier(input_shape, nb_classes, layers, iteration, threshold, dict_size, lr):
-    assert layers > 0
+def build_classifier(input_shape, nb_classes, convLayers, armLayers, denseLayers, lr, iteration, threshold, dict_size, conv_features=16):
     input = Input(shape=input_shape[1:])
     output = input
-    for i in range(layers):
+    for i in range(convLayers):
+        output = Convolution2D(conv_features, 3, 3, border_mode="same", W_regularizer=l2(weight_decay))(output)
+
+    output = Flatten()(output)
+    for i in range(armLayers):
+        output = BatchNormalization(axis=1)(output)
         output = ArmLayer(
             dict_size=dict_size,
             iteration = iteration,
-            threshold = threshold)(output)
+            threshold = threshold,
+            name = "arm_{}".format(i))(output)
+#        output = Dropout(0.5)(output)
+    for i in range(denseLayers - 1):
+        output = Dense(dict_size, activation="relu", W_regularizer=l2(weight_decay))(output)
     output = Dense(nb_classes, activation="softmax", W_regularizer=l2(weight_decay))(output)
     model = Model(input=input, output=output)
     optimizer = RMSprop(lr=lr)
@@ -43,12 +53,14 @@ def build_single_layer(input_shape, iteration, threshold, dict_size, weights=Non
 def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weights, lr):
     input = Input(shape=input_shape[1:])
     nb_features = np.prod(input_shape[1:])
+    flatInput = Flatten()(input)
     armLayer = ArmLayer(
         dict_size=dict_size,
         iteration = iteration,
         threshold = threshold,
-        weights = weights)
-    Y = armLayer(input)
+        weights = weights,
+        name="armLayer")
+    Y = armLayer(flatInput)
     lambdaLayer = Lambda(lambda x: K.dot(x,armLayer.W), output_shape=[nb_features], name="decode_layer")    
     output = lambdaLayer((Y))
     output = Reshape(input_shape[1:])(output)

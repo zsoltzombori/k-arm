@@ -4,6 +4,7 @@ import scipy.misc
 from keras import backend as K
 from keras.engine.topology import Layer
 from keras.regularizers import activity_l1
+from reconsRegularizer import *
 
 class ArmLayer(Layer):
     def __init__(self, dict_size, weights = None, iteration = 10, threshold = 0.5, **kwargs):
@@ -14,7 +15,7 @@ class ArmLayer(Layer):
         super(ArmLayer, self).__init__(**kwargs)
         
     def build(self, input_shape):
-        nb_features = np.prod(input_shape[1:])
+        nb_features = input_shape[1]
 
         if self.np_weights is not None:
             print "Using provided weights"
@@ -34,9 +35,14 @@ class ArmLayer(Layer):
         maxEigval = np.max(np.absolute(eigvals))
         self.alpha = np.float32(1/maxEigval)
 
-        self.activity_regularizer = activity_l1(2 * self.threshold/nb_features)
+        self.activity_regularizer = activity_l1(self.threshold/nb_features)
         self.activity_regularizer.set_layer(self)
         self.regularizers.append(self.activity_regularizer)
+
+        self.recons_regularizer = reconsRegularizer(l2=0.5)
+        self.recons_regularizer.set_layer(self)
+        self.regularizers.append(self.recons_regularizer)
+        
 
     def armderiv(self,x, y, domineigval):
         hard_thresholding = False
