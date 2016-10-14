@@ -23,7 +23,7 @@ def build_classifier(input_shape, nb_classes, convLayers, armLayers, denseLayers
     output = Flatten()(output)
     output = Dropout(0.5)(output)
     for i in range(armLayers):
-#        output = BatchNormalization(axis=1)(output)
+        output = BatchNormalization(axis=1)(output)
         output = ArmLayer(
             dict_size=dict_size,
             iteration = iteration,

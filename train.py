@@ -35,9 +35,13 @@ model.fit_generator(datagen.flow(X_train, Y_train, batch_size=args.batchSize, sh
                         )
 
 lastArmLayer = model.get_layer(name="arm_{}".format(args.armLayers-1))
-W_learned = lastArmLayer.get_weights()[0]
 y_fun = K.function([model.layers[0].input, K.learning_phase()], [lastArmLayer.output])
 Y_learned = y_fun([X_test,0])[0]
+
+W_learned = lastArmLayer.get_weights()[0]
+for i in reversed(range(args.armLayers-1)):
+    W_current = model.get_layer(name="arm_{}".format(i)).get_weights()[0]
+    W_learned = np.dot(W_learned, W_current)
 
 if args.dataset == "mnist":
     evaluate(X_test, Y_learned, W_learned, args.iteration, args.threshold, "classif")
