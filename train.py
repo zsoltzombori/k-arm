@@ -3,24 +3,26 @@ import argparse
 import data
 from model import *
 from vis import *
+from evaluate import *
 
 parser = argparse.ArgumentParser(description="Image classifer using sparsifying arm layers.")
 parser.add_argument('--iteration', dest="iteration", type=int, default=6, help="Number of iterations in k-arm approximation")
-parser.add_argument('--threshold', dest="threshold", type=float, default=0.02, help="Sparsity coefficient")
-parser.add_argument('--dict', dest="dict_size", type=int, default=400, help="Size of the feature dictionary")
-parser.add_argument('--epoch', dest="epoch", type=int, default=5, help="Number of epochs")
+parser.add_argument('--threshold', dest="threshold", type=float, default=0.04, help="Sparsity coefficient")
+parser.add_argument('--reconsCoef', dest="reconsCoef", type=float, default=2, help="Reconstruction coefficient of the arm layers")
+parser.add_argument('--dict', dest="dict_size", type=int, default=100, help="Size of the feature dictionary")
+parser.add_argument('--epoch', dest="epoch", type=int, default=10, help="Number of epochs")
 parser.add_argument('--lr', dest="lr", type=float, default=0.001, help="learning rate")
 parser.add_argument('--batch', dest="batchSize", type=int, default=128, help="Batch size")
 parser.add_argument('--armLayers', dest="armLayers", type=int, default=1, help="Arm layer count")
 parser.add_argument('--denseLayers', dest="denseLayers", type=int, default=1, help="Dense layer count")
 parser.add_argument('--convLayers', dest="convLayers", type=int, default=0, help="Convolution layer count")
-parser.add_argument('--dataset', dest="dataset", default="cifar10", help="mnist/cifar10")
+parser.add_argument('--dataset', dest="dataset", default="mnist", help="mnist/cifar10")
 args = parser.parse_args()
 
-print "dataset: {}, convLayers: {}, armLayers: {}, denseLayers: {}, iteration: {}, threshold: {}, dict_size: {}, lr: {}, batch: {}, epoch: {}".format(args.dataset,args.convLayers,args.armLayers,args.denseLayers,args.iteration,args.threshold,args.dict_size,args.lr,args.batchSize,args.epoch)
+print "dataset: {}, convLayers: {}, armLayers: {}, denseLayers: {}, iteration: {}, threshold: {}, reconsCoef: {}, dict_size: {}, lr: {}, batch: {}, epoch: {}".format(args.dataset,args.convLayers,args.armLayers,args.denseLayers,args.iteration,args.threshold,args.reconsCoef,args.dict_size,args.lr,args.batchSize,args.epoch)
 (X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_data(args.dataset)
 
-model = build_classifier(X_train.shape, nb_classes, args.convLayers, args.armLayers, args.denseLayers, args.lr, args.iteration, args.threshold, args.dict_size)
+model = build_classifier(X_train.shape, nb_classes, args.convLayers, args.armLayers, args.denseLayers, args.lr, args.iteration, args.threshold, args.reconsCoef,args.dict_size)
 
 model.summary()
 
@@ -33,12 +35,9 @@ model.fit_generator(datagen.flow(X_train, Y_train, batch_size=args.batchSize, sh
                         )
 
 lastArmLayer = model.get_layer(name="arm_{}".format(args.armLayers-1))
+W_learned = lastArmLayer.get_weights()[0]
+y_fun = K.function([model.layers[0].input, K.learning_phase()], [lastArmLayer.output])
+Y_learned = y_fun([X_test,0])[0]
 
 if args.dataset == "mnist":
-    W_learned = lastArmLayer.W.eval()
-    W_scaled = W_learned - np.min(W_learned)
-    W_scaled /= np.max(W_scaled)
-    W_scaled *= 255
-    vis(W_scaled, "dictImage/classif.png", n=int(np.sqrt(args.dict_size)))
-    
-
+    evaluate(X_test, Y_learned, W_learned, args.iteration, args.threshold, "classif")

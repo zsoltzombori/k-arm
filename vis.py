@@ -1,8 +1,7 @@
 import scipy.misc
 import numpy as np
 
-def vis(X, filename, n=20):
-    w = 28
+def vis(X, filename, n=20, w=28):
     assert len(X) >= n*n
     X = X[:n*n]
     X = X.reshape((n, n, w, w))

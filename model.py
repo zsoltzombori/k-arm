@@ -14,21 +14,22 @@ weight_decay = 1e-4
 
 
 
-def build_classifier(input_shape, nb_classes, convLayers, armLayers, denseLayers, lr, iteration, threshold, dict_size, conv_features=16):
+def build_classifier(input_shape, nb_classes, convLayers, armLayers, denseLayers, lr, iteration, threshold, reconsCoef, dict_size, conv_features=16):
     input = Input(shape=input_shape[1:])
     output = input
     for i in range(convLayers):
         output = Convolution2D(conv_features, 3, 3, border_mode="same", W_regularizer=l2(weight_decay))(output)
 
     output = Flatten()(output)
+    output = Dropout(0.5)(output)
     for i in range(armLayers):
-        output = BatchNormalization(axis=1)(output)
+#        output = BatchNormalization(axis=1)(output)
         output = ArmLayer(
             dict_size=dict_size,
             iteration = iteration,
-            threshold = threshold,
+            threshold = threshold / armLayers,
+            reconsCoef = reconsCoef / armLayers,
             name = "arm_{}".format(i))(output)
-#        output = Dropout(0.5)(output)
     for i in range(denseLayers - 1):
         output = Dense(dict_size, activation="relu", W_regularizer=l2(weight_decay))(output)
     output = Dense(nb_classes, activation="softmax", W_regularizer=l2(weight_decay))(output)

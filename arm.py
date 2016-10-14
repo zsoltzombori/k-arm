@@ -7,10 +7,11 @@ from keras.regularizers import activity_l1
 from reconsRegularizer import *
 
 class ArmLayer(Layer):
-    def __init__(self, dict_size, weights = None, iteration = 10, threshold = 0.5, **kwargs):
+    def __init__(self, dict_size, weights = None, iteration = 10, threshold = 0.02, reconsCoef = 1, **kwargs):
         self.np_weights = weights
         self.iteration = iteration
         self.threshold = threshold
+        self.reconsCoef = reconsCoef
         self.dict_size = dict_size
         super(ArmLayer, self).__init__(**kwargs)
         
@@ -39,7 +40,7 @@ class ArmLayer(Layer):
         self.activity_regularizer.set_layer(self)
         self.regularizers.append(self.activity_regularizer)
 
-        self.recons_regularizer = reconsRegularizer(l2=0.5)
+        self.recons_regularizer = reconsRegularizer(l2=self.reconsCoef)
         self.recons_regularizer.set_layer(self)
         self.regularizers.append(self.recons_regularizer)
         
