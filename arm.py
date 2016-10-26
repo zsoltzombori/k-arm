@@ -32,9 +32,9 @@ class ArmLayer(Layer):
         self.trainable_weights = [self.W]
 
         # set initial alpha
-        eigvals = np.linalg.eigvals(self.np_weights.dot(self.np_weights.T))
-        maxEigval = np.max(np.absolute(eigvals))
-        self.alpha = np.float32(1/maxEigval)
+#        eigvals = np.linalg.eigvals(self.np_weights.dot(K.transpose(self.np_weights)))
+#        maxEigval = np.max(np.absolute(eigvals))
+#        self.alpha = np.float32(1/maxEigval)
 
         self.activity_regularizer = activity_l1(self.threshold/nb_features)
         self.activity_regularizer.set_layer(self)
@@ -47,8 +47,7 @@ class ArmLayer(Layer):
 
     def armderiv(self,x, y, domineigval):
         hard_thresholding = False
-        linout = y - (1/domineigval) * K.dot(K.dot(y,self.W) - x,self.W.T)
-        #linout = y - self.alpha * K.dot(K.dot(y,self.W) - x,self.W.T)
+        linout = y - (1/domineigval) * K.dot(K.dot(y,self.W) - x,K.transpose(self.W))
         if hard_thresholding:
             out = K.greater(K.abs(linout),self.threshold) * linout
         else:
@@ -64,17 +63,13 @@ class ArmLayer(Layer):
 
     def call(self, x, mask=None):
         #POWER METHOD FOR APPROXIMATING THE DOMINANT EIGENVECTOR (9 ITERATIONS):
-        WW = K.dot(self.W,self.W.T)
-        o = np.ones(self.dict_size) #initial values for the dominant eigenvector
+        WW = K.dot(self.W,K.transpose(self.W))
+        o = K.ones([self.dict_size,1]) #initial values for the dominant eigenvector
         domineigvec = K.dot(WW,K.dot(WW,K.dot(WW,K.dot(WW,K.dot(WW,K.dot(WW,K.dot(WW,K.dot(WW,K.dot(WW,o)))))))))
-        WWd = K.dot(WW,domineigvec)
-        domineigval = K.dot(WWd,domineigvec)/K.dot(domineigvec,domineigvec) #THE CORRESPONDING DOMINANT EIGENVALUE
-        domineigval = domineigval.astype("float32")
+        WWd = K.transpose(K.dot(WW,domineigvec))
+        domineigval = K.dot(WWd,domineigvec)/K.dot(K.transpose(domineigvec),domineigvec) #THE CORRESPONDING DOMINANT EIGENVALUE
         
-        # flatten the images to arrays
-        x_flattened = K.reshape(x,[K.shape(x)[0],K.prod(K.shape(x)[1:])])
-        
-        y = self.arm(x_flattened, domineigval, self.iteration)        
+        y = self.arm(x, domineigval, self.iteration)        
         return y
     
     def get_output_shape_for(self,input_shape):
