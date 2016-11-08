@@ -32,13 +32,17 @@ def evaluate(X_test, Y_learned, W_learned, iteration, threshold, outputPrefix, r
     total_loss = reconsError + sparsity_loss
     print "Total loss: ", total_loss
 
+    if not os.path.exists("recons"): os.makedirs("recons")
+    if not os.path.exists("dictImage"): os.makedirs("dictImage")
+
     suffix = "it{}_th{}_dict{}_test{}_loss{:.3f}.png".format(iteration,threshold,dict_size,testSize,total_loss)
-    vis(X_prime_learned * 255, "recons/" + outputPrefix + "_recons_" + suffix)
+    vis_image(X_prime_learned * 255, "recons/" + outputPrefix + "_recons_" + suffix)
     W_scaled = W_learned - np.min(W_learned)
     W_scaled /= np.max(W_scaled)
     W_scaled *= 255
+    W_scaled = np.reshape(W_scaled, [dict_size, int(np.sqrt(nb_features)), -1])
     vis(W_scaled, "dictImage/" + outputPrefix + "_dict_" + suffix, n=int(np.sqrt(dict_size)))
-    diff_vis(X_test[:400],X_prime_learned[:400],28,28,20,20, "diff/" + outputPrefix + "_diff_" + suffix)
+#    diff_vis(X_test[:400],X_prime_learned[:400],28,28,20,20, "diff/" + outputPrefix + "_diff_" + suffix)
 
     # if resultFile was provided then add new line to result file
     if resultFile is not None:

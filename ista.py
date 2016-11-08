@@ -22,9 +22,9 @@ threshold = args.threshold
 weightFile = args.weightFile
 testSize = args.testSize
 
-(X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_mnist()
+(X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_data('mnist')
 X_test = X_test[:testSize]
-vis(X_test * 255, "orig.png")
+vis_image(X_test * 255, "orig.png")
 nb_features = np.prod(X_test.shape[1:])
 
 resultFile = "results.csv"
@@ -36,9 +36,9 @@ if weightFile is not None:
 else:
     weights = None
     trainIteration = 0
-    trainTheshold = 0
+    trainThreshold = 0
 
-model = build_encode_decode_layer(input_shape=X_test.shape, iteration=iteration, threshold=threshold, dict_size=dict_size, weights=weights)
+model = build_encode_decode_layer(input_shape=X_test.shape, iteration=iteration, threshold=threshold, dict_size=dict_size, weights=weights, lr=0.001)
 
 y_fun = K.function([model.layers[0].input], [model.layers[1].output])
 Y_learned = y_fun([X_test])[0]
@@ -62,10 +62,10 @@ sparsity_loss = threshold * np.sum(np.abs(Y_learned)) / testSize / nb_features
 total_loss = reconsError + sparsity_loss
 print "Total loss: ", total_loss
 
-outputFile = "output/ista_it{}_th{}_trainit{}_trainth{}_loss{:.3f}.png".format(iteration,threshold,trainIteration,trainThreshold,total_loss)
-vis(X_prime_learned * 255, outputFile)
+outputFile = "recons/ista_it{}_th{}_trainit{}_trainth{}_loss{:.3f}.png".format(iteration,threshold,trainIteration,trainThreshold,total_loss)
+vis_image(X_prime_learned * 255, outputFile)
 
-diff_vis(X_test[:400],X_prime_learned[:400],28,28,20,20,"diff")
+# diff_vis(X_test[:400],X_prime_learned[:400],28,28,20,20,"diff")
 
 if os.path.exists(resultFile):
     with open(resultFile, "a") as file:

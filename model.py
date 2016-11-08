@@ -67,8 +67,6 @@ def build_encode_decode_layer(input_shape, iteration, threshold, dict_size, weig
     output = Reshape(input_shape[1:])(output)
     model = Model(input=input, output=output)
     optimizer = RMSprop(lr=lr)
-    # optimizer = Nadam()
-    
     model.compile(optimizer=optimizer, loss="mse")
     return model
 

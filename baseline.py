@@ -1,5 +1,3 @@
-from vis import *
-from diff_vis import *
 import os.path
 import argparse
 import numpy as np
@@ -30,13 +28,10 @@ testSize = args.testSize
 batchSize = args.batchSize
 iteration = args.iteration
 
-(X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_mnist()
+(X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_data('mnist')
 nb_features = np.prod(X_test.shape[1:])
 X_train = X_train[:trainSize].reshape(trainSize, nb_features)
 X_test = X_test[:testSize].reshape(testSize, nb_features)
-vis(X_test * 255, "orig.png")
-
-# (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 if args.dictInput is None:
     if args.method == "omp":

@@ -13,13 +13,13 @@ sys.setrecursionlimit(2**20)
 
 parser = argparse.ArgumentParser(description="Sparse image encoding using k-arm.")
 parser.add_argument('--iteration', dest="iteration", type=int, default=6, help="Number of iterations in k-arm approximation")
-parser.add_argument('--threshold', dest="threshold", type=float, default=0.02, help="Sparsity coefficient")
+parser.add_argument('--threshold', dest="threshold", type=float, default=0.03, help="Sparsity coefficient")
 parser.add_argument('--dict', dest="dict", type=int, default=100, help="Size of the feature dictionary")
 parser.add_argument('--epoch', dest="epoch", type=int, default=10, help="Number of epochs")
 parser.add_argument('--lr', dest="lr", type=float, default=0.001, help="learning rate")
 parser.add_argument('--trainSize', dest="trainSize", type=int, default=5000, help="Training set size")
 parser.add_argument('--testSize', dest="testSize", type=int, default=1000, help="Test set size")
-parser.add_argument('--batch', dest="batchSize", type=int, default=16, help="Batch size")
+parser.add_argument('--batch', dest="batchSize", type=int, default=8, help="Batch size")
 parser.add_argument('--resultFile', dest="resultFile", default=None, help="File to write results")
 parser.add_argument('--dictInput', dest="dictInput", default=None, help="File to read dictionary from")
 parser.add_argument('--dictOutput', dest="dictOutput", default=None, help="File to write dictionary")
@@ -38,7 +38,7 @@ print "Dict: {}, \nThreshold: {}, \nTrainSize: {}, \nTestSize: {}, \nBatchSize: 
 (X_train, Y_train), (X_test, Y_test), datagen, test_datagen, nb_classes = data.load_data('mnist')
 X_train = X_train[:trainSize]
 X_test = X_test[:testSize]
-vis(X_test * 255, "orig.png")
+vis_image(X_test * 255, "orig.png")
 nb_features = np.prod(X_test.shape[1:])
 
 if args.dictInput is not None:
